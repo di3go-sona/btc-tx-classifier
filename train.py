@@ -6,14 +6,6 @@ import torch, torch_geometric, pytorch_lightning
 
 from pytorch_lightning.loggers import WandbLogger
 
-features = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_features.csv', header=None)
-classes = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_classes.csv', na_values='unknown')
-edges = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv')
-
-
-print(features)
-print(classes)
-print(edges)
 
 
 class CombinedDataset(torch.utils.data.Dataset):
@@ -96,9 +88,6 @@ class EllipticDataset(pytorch_lightning.LightningDataModule):
 
 
 
-data = EllipticDataset(features.copy(), classes.copy(), edges.copy())
-# loader = torch.utils.data.DataLoader(data, batch_size=32, sampler = data.sampler)
-
 
 # %%
 
@@ -114,6 +103,8 @@ class GCNModel(pytorch_lightning.LightningModule):
         self.linear_layer = torch.nn.Linear(32,1)
 
         self.loss = torch.nn.BCEWithLogitsLoss()
+
+        self.save_hyperparameters()
 
     def forward(self, x_ids):
         out = self.gcn_layer1(self.data.X, self.data.edges)
@@ -178,16 +169,32 @@ class GCNModel(pytorch_lightning.LightningModule):
         return optim
 
 
-model = GCNModel(data)
+if __name__ == '__main__':
+    features = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_features.csv', header=None)
+    classes = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_classes.csv', na_values='unknown')
+    edges = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv')
 
-logger = WandbLogger(log_model=True, project='btc-xai')
 
-trainer = pytorch_lightning.Trainer(
-    log_every_n_steps=1,
-    logger=logger,
-    check_val_every_n_epoch=1
-)
+    print(features)
+    print(classes)
+    print(edges)
 
-trainer.fit(model, data)
+    data = EllipticDataset(features.copy(), classes.copy(), edges.copy())
+    # loader = torch.utils.data.DataLoader(data, batch_size=32, sampler = data.sampler)
 
-# %%
+
+
+    model = GCNModel(data)
+
+    logger = WandbLogger(log_model=True, project='btc-xai')
+
+    trainer = pytorch_lightning.Trainer(
+        log_every_n_steps=1,
+        logger=logger,
+        check_val_every_n_epoch=1,
+        max_epochs=3
+    )
+
+    trainer.fit(model, data)
+
+    # %%
