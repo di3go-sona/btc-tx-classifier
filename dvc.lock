@@ -1,0 +1,9 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: python3 train.py
+    deps:
+    - path: elliptic_bitcoin_dataset/
+      md5: a81bfdd1ff1d28248080b0104ab51a19.dir
+      size: 697459499
+      nfiles: 3

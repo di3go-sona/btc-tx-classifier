@@ -1,0 +1,5 @@
+stages:
+  train:
+    cmd: python3 train.py
+    deps:
+    - elliptic_bitcoin_dataset/

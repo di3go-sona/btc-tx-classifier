@@ -18,6 +18,7 @@ class CombinedDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.ids)
+    
 #%%
 class EllipticDataset(pytorch_lightning.LightningDataModule):
     def __init__(self, features, classes, edges, local_features=True):
@@ -41,6 +42,12 @@ class EllipticDataset(pytorch_lightning.LightningDataModule):
         features = features.sort_values(0).to_numpy()
         classes = classes.sort_values('txId').to_numpy()
         edges = edges.to_numpy()
+        
+        
+        self.features = features        
+        self.classes = classes
+        self.edges = edges
+
 
         self.n_features = 94 if local_features else 164
 
@@ -74,8 +81,8 @@ class EllipticDataset(pytorch_lightning.LightningDataModule):
         train_w, _ = torch.utils.data.random_split(self.valid_weights, [train_l, l-train_l], generator=torch.Generator().manual_seed(42))
 
          
-        self._train_dataloader = torch.utils.data.DataLoader(train_ds, batch_size=32, sampler= torch.utils.data.WeightedRandomSampler(train_w, len(train_ds), replacement=True))
-        self._val_dataloader = torch.utils.data.DataLoader(val_ds, batch_size=32)
+        self._train_dataloader = torch.utils.data.DataLoader(train_ds, batch_size=32, drop_last=True, sampler= torch.utils.data.WeightedRandomSampler(train_w, len(train_ds), replacement=True))
+        self._val_dataloader = torch.utils.data.DataLoader(val_ds, batch_size=32, drop_last=True,)
 
     def train_dataloader(self):
         return self._train_dataloader
@@ -95,29 +102,32 @@ class GCNModel(pytorch_lightning.LightningModule):
     def __init__(self, data):
         super().__init__()
         self.data = data
-
+        print(type(data))
         self.gcn_layer1 = torch_geometric.nn.GCNConv(data.n_features, 32)
         self.gelu1 = torch.nn.GELU()
         self.gcn_layer2 = torch_geometric.nn.GCNConv(32, 32)
         self.gelu2 = torch.nn.GELU()
         self.linear_layer = torch.nn.Linear(32,1)
+        
+        self.X = self.data.X
+        self.edges = self.data.edges
 
         self.loss = torch.nn.BCEWithLogitsLoss()
 
-        self.save_hyperparameters()
+        # self.save_hyperparameters()
 
     def forward(self, x_ids):
-        out = self.gcn_layer1(self.data.X, self.data.edges)
+        out = self.gcn_layer1(self.X, self.edges)
         out = self.gelu1(out)
-        out = self.gcn_layer2(out, self.data.edges)
+        out = self.gcn_layer2(out, self.edges)
         batch_out = out[x_ids]
         batch_out = self.gelu2(batch_out)
         scores = self.linear_layer(batch_out).squeeze()
-        return scores
+        return scores, batch_out
 
     def training_step(self, batch, batch_idx) :
         x_ids, y = batch
-        out =  self(x_ids)
+        out, _  =  self(x_ids)
         loss = self.loss(out, y.float() )
 
         out_pos = out[y == 1]
@@ -144,7 +154,7 @@ class GCNModel(pytorch_lightning.LightningModule):
 
     def validation_step(self, batch, batch_idx) :
         x_ids, y = batch
-        out =  self(x_ids)
+        out, _  =  self(x_ids)
         loss = self.loss(out, y.float() )
 
         out_pos = out[y == 1]
@@ -161,7 +171,7 @@ class GCNModel(pytorch_lightning.LightningModule):
         self.log('val/prec', prec)
         self.log('val/prec_bal', prec_bal)
 
-        return loss
+
 
 
     def configure_optimizers(self):
@@ -189,10 +199,12 @@ if __name__ == '__main__':
     logger = WandbLogger(log_model=True, project='btc-xai')
 
     trainer = pytorch_lightning.Trainer(
-        log_every_n_steps=1,
+        log_every_n_steps=10,
         logger=logger,
         check_val_every_n_epoch=1,
-        max_epochs=3
+        max_epochs=15,
+        devices=1,
+        accelerator='gpu'
     )
 
     trainer.fit(model, data)
