@@ -2,10 +2,7 @@
 #%%
 import pandas as pd, numpy as np
 import torch, torch_geometric, pytorch_lightning
-
-
 from pytorch_lightning.loggers import WandbLogger
-
 
 
 class CombinedDataset(torch.utils.data.Dataset):

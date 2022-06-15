@@ -1,5 +1,6 @@
 #%%
 import networkx as nx, pandas as pd
+import numpy as np
 import sklearn
 from train import EllipticDataset, GCNModel, CombinedDataset
 import torch
@@ -20,6 +21,9 @@ nodes = data.features.T[0].astype(int)
 edges = data.edges.numpy().T
 ts = data.features.T[1].astype(int)
 
+print(np.argwhere(data.classes ==1 ))
+cls_map = dict(data.classes.tolist())
+shapes_map = {-1: 'o', 0: 's', 1: '^'}
 # %%
 graph = nx.DiGraph()
 graph.add_nodes_from(nodes)
@@ -56,16 +60,26 @@ def predict(node_id, neighs):
     
     raw_scores, out = model(torch.tensor(list(subgraph_nodes), dtype=torch.long))
     scores = torch.sigmoid(raw_scores).detach().numpy()
-    print(scores, raw_scores.shape, out.shape)
+    scores_map = dict( zip(subgraph_nodes, scores))
+    pos = nx.spring_layout(subgraph)
 
     #plot result
-    plt.figure(figsize=(10,10))
-    pos = nx.kamada_kawai_layout(subgraph)
+    plt.figure(figsize=(15,15))
     
-    nx.draw(subgraph, pos, node_color = scores, cmap=cmap, vmin=0, vmax=1)
-    plt.savefig("graph.png", format="PNG", )
+    #For each node class...
+    for shape in set('so^'):
+        #...filter and draw the subset of nodes with the same symbol in the positions that are now known through the use of the layout.
+        nodelist =  [node for node in filter(lambda x: shapes_map[cls_map[x]] == shape,subgraph.nodes)]
+        scorelist = [ 1-scores_map[n] for n in nodelist]
+        if len(nodelist):
+            nx.draw_networkx_nodes(subgraph,pos,node_shape = shape,  node_color = scorelist, nodelist =nodelist, cmap=cmap, vmin=0, vmax=1, edgecolors=['black'])
     
-    return 'graph.png', len(subgraph.edges), len(subgraph.nodes)
+    # nx.draw_networkx_nodes(subgraph, pos, node_color = scores, cmap=cmap, vmin=0, vmax=1, node_shape=shapes, edgecolors=border_colors, linewidths=2)
+    nx.draw_networkx_edges(subgraph, pos)
+    
+    plt.savefig("/tmp/graph.png", format="PNG", )
+    
+    return "/tmp/graph.png", len(subgraph.edges), len(subgraph.nodes)
 
 demo = gr.Interface(fn=predict, inputs=[gr_node_id, gr_neighs_slider], outputs=[gr_graph, gr_edges, gr_nodes])
 

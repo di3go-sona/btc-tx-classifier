@@ -2,5 +2,5 @@
 /btc-xai-env
 /wandb
 /btc-xai
-graph.png
-__pycache__/train.cpython-38.pyc
+__pycache__/
+.python-version
