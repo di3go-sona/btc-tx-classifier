@@ -3,6 +3,15 @@ import networkx as nx, pandas as pd
 import numpy as np
 from train import EllipticDataset, GCNModel
 import torch
+import os
+
+
+# install pytorch-geometric stuff as it need pytorch to be already intalled before launching the command
+os.system('pip3 install torch-scatter ')
+os.system('pip3 install torch-sparse ')
+os.system('pip3 install torch-cluster ')
+os.system('pip3 install torch-spline-conv ')
+os.system('pip3 install torch-geometric -f https://data.pyg.org/whl/torch-1.10.0+cu113.html')
 
 
 features = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_features.csv', header=None)
