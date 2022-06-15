@@ -1,8 +1,7 @@
 #%%
 import networkx as nx, pandas as pd
 import numpy as np
-import sklearn
-from train import EllipticDataset, GCNModel, CombinedDataset
+from train import EllipticDataset, GCNModel
 import torch
 
 
