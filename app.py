@@ -21,7 +21,7 @@ edges = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv')
 
 # %%
 data = EllipticDataset(features.copy(), classes.copy(), edges.copy())
-model = GCNModel.load_from_checkpoint('btc-xai/369sy289/checkpoints/epoch=14-step=17460.ckpt', data=data)
+model = GCNModel.load_from_checkpoint('model.ckpt', data=data)
 
 
 # %%
