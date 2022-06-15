@@ -1,7 +1,6 @@
 #%%
 import networkx as nx, pandas as pd
 import numpy as np
-from train import EllipticDataset, GCNModel
 import torch
 import os
 
@@ -13,6 +12,7 @@ os.system('pip3 install torch-cluster ')
 os.system('pip3 install torch-spline-conv ')
 os.system('pip3 install torch-geometric -f https://data.pyg.org/whl/torch-1.10.0+cu113.html')
 
+from train import EllipticDataset, GCNModel
 
 features = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_features.csv', header=None)
 classes = pd.read_csv('./elliptic_bitcoin_dataset/elliptic_txs_classes.csv', na_values='unknown')
